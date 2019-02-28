@@ -246,9 +246,10 @@ def adversarial_train(epoches):
     optimizerD = optim.Adam(netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
     optimizerG = optim.Adam(netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
 
-    report_path = os.path.join(opt.outf, "training_report.txt")
-    report = open(report_path, "w")
-    report.write("Epoch, Batch, Loss_D, Loss_G, D(x), D(G(z))\n")
+    if opt.debug == False:
+        report_path = os.path.join(opt.outf, "training_report.txt")
+        report = open(report_path, "w")
+        report.write("Epoch, Batch, Loss_D, Loss_G, D(x), D(G(z))\n")
 
     for epoch in range(1, epoches+1):
         for i, data in enumerate(dataloader):
@@ -288,11 +289,6 @@ def adversarial_train(epoches):
             D_G_z2 = output.mean().item()
             optimizerG.step()
 
-            print(
-            '[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f'
-                % (epoch, epoches , i, len(dataloader),
-                     errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
-
 
             report.write(
             '[%d/%d],[%d/%d],%.4f,%.4f,%.4f,%.4f / %.4f\n'
@@ -307,15 +303,25 @@ def adversarial_train(epoches):
                 vutils.save_image(fake.detach(),
                         '%s/fake_samples_epoch_%03d.png' % (opt.outf, epoch),
                         normalize=True)
+                
+                print(
+                '[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f'
+                    % (epoch, epoches , i, len(dataloader),
+                         errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
 
-            # do checkpointing
-            torch.save(netG.state_dict(), '%s/netG_epoch_%d.pth' % (opt.outf, epoch))
-            torch.save(netD.state_dict(), '%s/netD_epoch_%d.pth' % (opt.outf, epoch))
-            
             if opt.debug:
-                if i > 0:
+                if i > 0: 
                     break
+            else:
+                report.write(
+                '[%d/%d],[%d/%d],%.4f,%.4f,%.4f,%.4f / %.4f\n'
+                      % (epoch, epoches , i, len(dataloader),
+                         errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
 
+        # do checkpointing
+        torch.save(netG.state_dict(), '%s/netG_epoch_%d.pth' % (opt.outf, epoch))
+        torch.save(netD.state_dict(), '%s/netD_epoch_%d.pth' % (opt.outf, epoch))
+            
     report.close()
     return
 
@@ -355,9 +361,10 @@ def classification_train(epoches, state_dict_path, report_name):
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(netD.parameters(),
     lr=opt.lr, betas=(opt.beta1, opt.beta2))
-
-    f = open(report_name, "w")
-    f.write("Epoch, Batch, Loss\n")
+    
+    if opt.debug == False:
+        f = open(report_name, "w")
+        f.write("Epoch, Batch, Loss\n")
     for epoch in range(1, epoches+1):
         for i, (imgs, labels) in enumerate(dataloader):
             netD.zero_grad()
@@ -370,20 +377,22 @@ def classification_train(epoches, state_dict_path, report_name):
             errD = criterion(output, labels)
             errD.backward()
             optimizer.step()
-
-            print(
-            '[%d/%d][%d/%d] Loss_D: %.4f'
-                % (epoch, epoches , i, len(dataloader),
-                     errD.item()))
-
-            f.write(
-            '[%d/%d],[%d/%d],%.4f\n'
-                % (epoch, epoches , i, len(dataloader),
-                     errD.item()))
-
+            
+            if i % 50 == 0:
+                print(
+                '[%d/%d][%d/%d] Loss_D: %.4f'
+                    % (epoch, epoches , i, len(dataloader),
+                         errD.item()))
+           
             if opt.debug:
                 if i > 0:
                     break
+            else:
+                f.write(
+                '[%d/%d],[%d/%d],%.4f\n'
+                    % (epoch, epoches , i, len(dataloader),
+                         errD.item()))
+
 
     f.close()
     return
