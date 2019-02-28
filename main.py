@@ -295,7 +295,9 @@ def adversarial_train(epoches):
                         '%s/real_samples.png' % opt.outf,
                         normalize=True)
                 fake = netG(fixed_noise)
-                vutils.save_image(fake.detach(),
+                
+                if opt.dry_run is None:
+                    vutils.save_image(fake.detach(),
                         '%s/fake_samples_epoch_%03d.png' % (opt.outf, epoch),
                         normalize=True)
                 
