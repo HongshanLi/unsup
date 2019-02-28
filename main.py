@@ -34,7 +34,7 @@ parser.add_argument('--outf', default='.',
 help='folder to output images and model checkpoints')
 parser.add_argument('--manualSeed', type=int, help='manual seed')
 parser.add_argument("--n-classes", type=int, default=10, help="num of classes")
-parser.add_argument("--debug", action="store_true", help="debug mode")
+parser.add_argument("--dry-run", type=int , help="dry_run mode")
 
 opt = parser.parse_args()
 print(opt)
@@ -246,7 +246,7 @@ def adversarial_train(epoches):
     optimizerD = optim.Adam(netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
     optimizerG = optim.Adam(netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
 
-    if opt.debug == False:
+    if opt.dry_run == False:
         report_path = os.path.join(opt.outf, "training_report.txt")
         report = open(report_path, "w")
         report.write("Epoch, Batch, Loss_D, Loss_G, D(x), D(G(z))\n")
@@ -290,11 +290,6 @@ def adversarial_train(epoches):
             optimizerG.step()
 
 
-            report.write(
-            '[%d/%d],[%d/%d],%.4f,%.4f,%.4f,%.4f / %.4f\n'
-                  % (epoch, epoches , i, len(dataloader),
-                     errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
-
             if i % 100 == 0:
                 vutils.save_image(real_cpu,
                         '%s/real_samples.png' % opt.outf,
@@ -309,8 +304,8 @@ def adversarial_train(epoches):
                     % (epoch, epoches , i, len(dataloader),
                          errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
 
-            if opt.debug:
-                if i > 0: 
+            if opt.dry_run:
+                if i > opt.dry_run: 
                     break
             else:
                 report.write(
@@ -319,10 +314,12 @@ def adversarial_train(epoches):
                          errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
 
         # do checkpointing
-        torch.save(netG.state_dict(), '%s/netG_epoch_%d.pth' % (opt.outf, epoch))
-        torch.save(netD.state_dict(), '%s/netD_epoch_%d.pth' % (opt.outf, epoch))
-            
-    report.close()
+        if opt.dry_run is None:
+            torch.save(netG.state_dict(), '%s/netG_epoch_%d.pth' % (opt.outf, epoch))
+            torch.save(netD.state_dict(), '%s/netD_epoch_%d.pth' % (opt.outf, epoch))
+    
+    if opt.dry_run is None:        
+        report.close()
     return
 
 def _one_hot_encode(labels, n_classes):
@@ -362,7 +359,7 @@ def classification_train(epoches, state_dict_path, report_name):
     optimizer = torch.optim.Adam(netD.parameters(),
     lr=opt.lr, betas=(opt.beta1, opt.beta2))
     
-    if opt.debug == False:
+    if opt.dry_run == False:
         f = open(report_name, "w")
         f.write("Epoch, Batch, Loss\n")
     for epoch in range(1, epoches+1):
@@ -384,8 +381,8 @@ def classification_train(epoches, state_dict_path, report_name):
                     % (epoch, epoches , i, len(dataloader),
                          errD.item()))
            
-            if opt.debug:
-                if i > 0:
+            if opt.dry_run:
+                if i > opt.dry_run:
                     break
             else:
                 f.write(
@@ -393,8 +390,8 @@ def classification_train(epoches, state_dict_path, report_name):
                     % (epoch, epoches , i, len(dataloader),
                          errD.item()))
 
-
-    f.close()
+    if opt.dry_run == False:
+        f.close()
     return
 
 
@@ -429,5 +426,5 @@ def compare_efficiency(epoches):
 
 
 if __name__=="__main__":
-    #adversarial_train(epoches=opt.adv_epoches)
+    adversarial_train(epoches=opt.adv_epoches)
     compare_efficiency(epoches=opt.clf_epoches)
