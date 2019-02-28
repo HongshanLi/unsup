@@ -1,1 +1,1 @@
-python performance.py --plot-frequency 50 --log-dir cifar10_checkpoints
+python performance.py --plot-frequency 100 --log-dir cifar10_checkpoints

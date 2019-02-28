@@ -26,11 +26,16 @@ def adv_performance(plot_frequency):
 
     f.close()
     iterations = range(len(D_losses))
-    plt.plot(iterations, D_losses, "b",
-    iterations, G_losses, "r")
+
+    d_losses, = plt.plot(iterations, D_losses, "b")
+    g_losses, = plt.plot(iterations, G_losses, "r")
+    plt.axis([0, len(D_losses), 0, 5])
     
-    outfile = os.path.join(opt.log_dir, "adv_performance.png")
-    plt.savefig(outfile)
+
+    plt.legend([d_losses, g_losses], ["D loss", "G loss"])
+    outf_path = os.path.join(opt.log_dir, "adv_performance.png")
+    plt.savefig(outf_path)
+    
 
 
 def compare_training(plot_frequency):
@@ -75,6 +80,6 @@ def compare_training(plot_frequency):
 
 
 
-# adv_performance(opt.plot_frequency)
+adv_performance(opt.plot_frequency)
 
-compare_training(opt.plot_frequency)
+# compare_training(opt.plot_frequency)
